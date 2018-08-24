@@ -1,41 +1,88 @@
-#define WATT_HR_PER_PULSE 100
+#include <ESP8266WiFi.h>
 
-#define POWER_PIN_COMPRESSOR 0
-#define POWER_PIN_HEATER 2
+WiFiEventHandler gotIpEventHandler, disconnectedEventHandler;
 
-volatile unsigned int pulsesCompressor = 0;
-volatile unsigned int pulsesHeater = 0;
+bool ledState;
+volatile int count = 0;
+
+void doCount() {
+	count++;
+}
 
 void setup() {
-	pinMode(POWER_PIN_COMPRESSOR, INPUT);
-	attachInterrupt(digitalPinToInterrupt(POWER_PIN_COMPRESSOR), countPulseCompressor, RISING);
-	attachInterrupt(digitalPinToInterrupt(POWER_PIN_HEATER), countPulseHeater, RISING);
+	// put your setup code here, to run once:
+	Serial.begin(115200);
+	pinMode(LED_BUILTIN, OUTPUT);
+	pinMode(2, INPUT);
+	attachInterrupt(2, doCount, RISING);
+
+
 }
 
-void countPulseCompressor() {
-	pulsesCompressor++;
-}
+void sendCount() {
+	Serial.print("Sending ");
+	Serial.println(count);
 
-void countPulseCompressor() {
-	pulsesHeater++;
+	WiFiClientSecure client;
+	client.setTimeout(3000);
+	const char* host = "emoncms.org";
+	int httpsPort = 443;
+	Serial.print("connecting to ");
+	Serial.println(host);
+	if (!client.connect(host, httpsPort)) {
+		Serial.println("connection failed");
+		return;
+	}
+
+	int sendCount = count;  
+	client.print(String("GET ") + "/input/post?node=test&fulljson={\"counter\":" + sendCount+"}&apikey=***REMOVED***" + " HTTP/1.1\r\n" +
+			"Host: " + host + "\r\n" +
+			"User-Agent: BuildFailureDetectorESP8266\r\n" +
+			"Connection: close\r\n\r\n");
+
+	int i = 0;
+	Serial.println("Request sent. Waiting for response...");
+	unsigned long timeout = millis();
+	while (client.available() == 0) {
+		if (millis() - timeout > 5000) {
+			Serial.println(">>> Client Timeout !");
+			client.stop();
+			return;
+		}
+	}
+
+	Serial.println("Got it! Reading response...");
+	// Read all the lines of the reply from server and print them to Serial
+	bool isSuccess = false;
+	while (client.available()) {
+		String response = client.readStringUntil('\r');
+		// HTTP/1.1 200 OK
+		if (response.indexOf("200 OK") >= 0) {
+			isSuccess = true;
+		}
+		Serial.print(response);
+		if (response == "\n") {
+			break;
+		}
+	}
+
+	Serial.println(String("Success: ") + isSuccess);
+
+	Serial.println();
+	Serial.println("closing connection");
+
+
+	count -= sendCount;
 }
 
 void loop() {
-	unsigned int pulsesSend;
-
-	if (pulsesCompressor > 0) {
-		pulsesSend = pulsesCompressor;
-		if (powerSender.SendPower("compressorWattHours", pulsesSend)) {
-			pulsesCompressor -= pulsesSend;
-		}
+	//  digitalWrite(LED_BUILTIN, ledState);
+	//  ledState = !ledState;
+	//  delay(250);
+	Serial.println("ping");
+	if (count > 0) {
+		sendCount();
 	}
 
-	if (pulsesHeater > 0) {
-		pulsesSend = pulsesHeater;
-		if (powerSender.SendPower("heaterWattHours", pulsesSend)) {
-			pulsesHeater -= pulsesSend;
-		}
-	}
-	
-	delay(500);
+	delay(1000);
 }
