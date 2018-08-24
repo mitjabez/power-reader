@@ -1,88 +1,42 @@
-#include <ESP8266WiFi.h>
+#include "emoncms.h"
 
-WiFiEventHandler gotIpEventHandler, disconnectedEventHandler;
+#define HEATER_PIN 0
+#define HEAT_PUMP_PIN 2
 
-bool ledState;
-volatile int count = 0;
+#define WH(X) (X)*100
 
-void doCount() {
-	count++;
+volatile int countHeater = 0;
+volatile int countHeatPump = 0;
+
+void doCountHeater() {
+    countHeater++;
+}
+
+void doCountHeatPump() {
+    countHeatPump++;
 }
 
 void setup() {
-	// put your setup code here, to run once:
-	Serial.begin(115200);
-	pinMode(LED_BUILTIN, OUTPUT);
-	pinMode(2, INPUT);
-	attachInterrupt(2, doCount, RISING);
+    Serial.begin(115200);
 
+    pinMode(HEATER_PIN, INPUT);
+    pinMode(HEAT_PUMP_PIN, INPUT);
 
-}
+    attachInterrupt(HEATER_PIN, doCountHeater, RISING);
+    attachInterrupt(HEAT_PUMP_PIN, doCountHeatPump, RISING);
 
-void sendCount() {
-	Serial.print("Sending ");
-	Serial.println(count);
-
-	WiFiClientSecure client;
-	client.setTimeout(3000);
-	const char* host = "emoncms.org";
-	int httpsPort = 443;
-	Serial.print("connecting to ");
-	Serial.println(host);
-	if (!client.connect(host, httpsPort)) {
-		Serial.println("connection failed");
-		return;
-	}
-
-	int sendCount = count;  
-	client.print(String("GET ") + "/input/post?node=test&fulljson={\"counter\":" + sendCount+"}&apikey=***REMOVED***" + " HTTP/1.1\r\n" +
-			"Host: " + host + "\r\n" +
-			"User-Agent: BuildFailureDetectorESP8266\r\n" +
-			"Connection: close\r\n\r\n");
-
-	int i = 0;
-	Serial.println("Request sent. Waiting for response...");
-	unsigned long timeout = millis();
-	while (client.available() == 0) {
-		if (millis() - timeout > 5000) {
-			Serial.println(">>> Client Timeout !");
-			client.stop();
-			return;
-		}
-	}
-
-	Serial.println("Got it! Reading response...");
-	// Read all the lines of the reply from server and print them to Serial
-	bool isSuccess = false;
-	while (client.available()) {
-		String response = client.readStringUntil('\r');
-		// HTTP/1.1 200 OK
-		if (response.indexOf("200 OK") >= 0) {
-			isSuccess = true;
-		}
-		Serial.print(response);
-		if (response == "\n") {
-			break;
-		}
-	}
-
-	Serial.println(String("Success: ") + isSuccess);
-
-	Serial.println();
-	Serial.println("closing connection");
-
-
-	count -= sendCount;
+    initWiFi();
 }
 
 void loop() {
-	//  digitalWrite(LED_BUILTIN, ledState);
-	//  ledState = !ledState;
-	//  delay(250);
-	Serial.println("ping");
-	if (count > 0) {
-		sendCount();
-	}
+    if (countHeater > 0 || countHeatPump > 0) {
+        int countHeaterSend = countHeater;
+        int countHeatPumpSend = countHeatPump;
+        if (sendPowerUsage(WH(countHeaterSend), WH(countHeatPumpSend))) {
+            countHeater -= countHeaterSend;
+            countHeatPump -= countHeatPumpSend;
+        }
+    }
 
-	delay(1000);
+    delay(1000);
 }
