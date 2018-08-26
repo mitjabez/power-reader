@@ -2,6 +2,6 @@
 #define EMONCMS_H
 
 void initWiFi();
-bool sendPowerUsage(int wattHoursHeater, int wattHoursHeatPump);
+bool sendPowerUsage(unsigned long countHeater, unsigned long countHeatPump);
 
 #endif

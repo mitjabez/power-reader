@@ -29,12 +29,11 @@ void initWiFi() {
 	WiFi.begin(SSID, KEY);
 }
 
-bool sendPowerUsage(int wattHoursHeater, int wattHoursHeatPump) {
+bool sendPowerUsage(unsigned long countHeater, unsigned long countHeatPump) {
 	Serial.print(F("Sending power usage. Heat pump: "));
-	Serial.print(wattHoursHeatPump);
-    Serial.print(F(" Wh, Heater: "));
-	Serial.print(wattHoursHeater);
-    Serial.println(F(" Wh."));
+	Serial.print(countHeatPump);
+    Serial.print(F(" , Heater: "));
+	Serial.println(countHeater);
 
 	WiFiClientSecure client;
 	client.setTimeout(TCP_TIMEOUT);
@@ -47,8 +46,8 @@ bool sendPowerUsage(int wattHoursHeater, int wattHoursHeatPump) {
 
 	client.print(String("GET ") 
                  + "/input/post?node=" + NODE + "&fulljson={"
-                 + "\"wattHoursHeatPump\":" + wattHoursHeatPump + "," 
-                 + "\"wattHoursHeater\":" + wattHoursHeater
+                 + "\"countHeatPump\":" + countHeatPump + "," 
+                 + "\"countHeater\":" + countHeater
                  + "}&apikey=" + APIKEY + " HTTP/1.1\r\n"
                  + "Host: " + HOST + "\r\n"
                  + "User-Agent: BuildFailureDetectorESP8266\r\n"

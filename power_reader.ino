@@ -3,17 +3,24 @@
 #define HEATER_PIN 0
 #define HEAT_PUMP_PIN 2
 
+unsigned long lastUpdate;
+
+// send every minute
+#define SEND_MILLIS 60000
+
 #define WH(X) (X)*100
 
-volatile int countHeater = 0;
-volatile int countHeatPump = 0;
+volatile unsigned long countHeater = 0;
+volatile unsigned long countHeatPump = 0;
 
 void doCountHeater() {
     countHeater++;
+	Serial.println("Heater 100 Wh");
 }
 
 void doCountHeatPump() {
     countHeatPump++;
+	Serial.println("Heat pump 100 Wh");
 }
 
 void setup() {
@@ -22,21 +29,27 @@ void setup() {
     pinMode(HEATER_PIN, INPUT);
     pinMode(HEAT_PUMP_PIN, INPUT);
 
-    attachInterrupt(HEATER_PIN, doCountHeater, RISING);
-    attachInterrupt(HEAT_PUMP_PIN, doCountHeatPump, RISING);
+    attachInterrupt(HEATER_PIN, doCountHeater, FALLING);
+    attachInterrupt(HEAT_PUMP_PIN, doCountHeatPump, FALLING);
 
     initWiFi();
 }
 
+void printState() {
+    Serial.print("Heat pump: ");
+    Serial.print(countHeatPump);
+    Serial.print(" Heater: ");
+    Serial.println(countHeater);
+}
+
 void loop() {
-    if (countHeater > 0 || countHeatPump > 0) {
-        int countHeaterSend = countHeater;
-        int countHeatPumpSend = countHeatPump;
-        if (sendPowerUsage(WH(countHeaterSend), WH(countHeatPumpSend))) {
-            countHeater -= countHeaterSend;
-            countHeatPump -= countHeatPumpSend;
-        }
-    }
+	printState();
+	
+	unsigned long now = millis();
+	if (now - lastUpdate > SEND_MILLIS) {
+		lastUpdate = now;
+		sendPowerUsage(countHeater, countHeatPump);
+	}
 
     delay(1000);
 }
