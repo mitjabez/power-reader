@@ -1,10 +1,10 @@
 #include "emoncms.h"
 
-#define HEATER_PIN 0
-#define HEAT_PUMP_PIN 2
+#define HEAT_PUMP_PIN 0
+#define HEATER_PIN 2
 
 // will not send to emoncms
-#define NO_EMONCMS
+//#define NO_EMONCMS
 
 // how long to wait before a new signal is detected
 #define SIGNAL_SENSITIVITY_MS 200
