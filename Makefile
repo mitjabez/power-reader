@@ -1,2 +1,5 @@
-UPLOAD_PORT = /dev/tty.SLAB_USBtoUART
-include $(HOME)/Documents/Arduino/makeEspArduino/makeEspArduino.mk
+MONITOR_BAUDRATE = 115200
+CHIP = esp8266
+ARDUINO_LIBS += PubSubClient
+
+include $(HOME)/Arduino/makeEspArduino/makeEspArduino.mk

@@ -1,10 +1,9 @@
-#include "emoncms.h"
+#include "sender.h"
 
 #define HEAT_PUMP_PIN 0
 #define HEATER_PIN 2
 
-// will not send to emoncms
-//#define NO_EMONCMS
+//#define NO_SEND
 
 // how long to wait before a new signal is detected
 #define SIGNAL_SENSITIVITY_MS 200
@@ -28,7 +27,9 @@ bool shouldUpdate(unsigned long &lastUpdate) {
     return true;
 }
 
-void doCountHeater() {
+// have to add ICACHE_RAM_ATTR or it will crash with "esp8266 isr not in iram"
+// https://arduino-esp8266.readthedocs.io/en/latest/faq/a02-my-esp-crashes.html?highlight=isr%20icache_RAM_attr#other-causes-for-crashes
+void ICACHE_RAM_ATTR doCountHeater() {
     if (!shouldUpdate(lastHeaterUpdate))
         return;
 
@@ -36,7 +37,7 @@ void doCountHeater() {
 	Serial.println("Heater 100 Wh");
 }
 
-void doCountHeatPump() {
+void ICACHE_RAM_ATTR doCountHeatPump() {
     if (!shouldUpdate(lastHeatPumpUpdate))
         return;
 
@@ -54,6 +55,7 @@ void setup() {
     attachInterrupt(HEAT_PUMP_PIN, doCountHeatPump, FALLING);
 
     initWiFi();
+    initMqtt();
 }
 
 void printState() {
@@ -64,17 +66,17 @@ void printState() {
 }
 
 void loop() {
-	printState();
-	
 	unsigned long now = millis();
 	if (now - lastUpdate > SEND_MILLIS) {
+        printState();
 		lastUpdate = now;
-        #ifdef NO_EMONCMS
-        Serial.println("Would send to emoncms.");
+        #ifdef NO_SEND
+        Serial.println("Would send.");
         #else
 		sendPowerUsage(countHeater, countHeatPump);
         #endif
 	}
 
+    loopSender();
     delay(1000);
 }
