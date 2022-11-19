@@ -1,0 +1,14 @@
+#ifndef _CONFIG_H
+#define _CONFIG_H
+
+#define SSID ""
+#define KEY ""
+
+#define MQTT_ID ""
+#define TOPIC_ID_HEATPUMP ""
+
+#define MQTT_SERVER ""
+#define MQTT_USER ""
+#define MQTT_PASSWORD ""
+
+#endif

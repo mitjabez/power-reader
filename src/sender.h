@@ -3,16 +3,7 @@
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-
-#define SSID "***REMOVED***"
-#define KEY "***REMOVED***"
-
-#define MQTT_ID "HEATPUMP"
-#define TOPIC_ID_HEATPUMP "heatpump/power"
-
-#define MQTT_SERVER "***REMOVED***"
-#define MQTT_USER "***REMOVED***user"
-#define MQTT_PASSWORD "***REMOVED***"
+#include "config.h"
 
 WiFiClient espClient;
 PubSubClient pubSub(espClient);
