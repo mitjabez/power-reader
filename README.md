@@ -7,6 +7,8 @@ Esp8266 app which reads pulses (1 pulse/100Wh) from Levato DME D100 T1 energy me
 * https://github.com/esp8266/Arduino
 * https://github.com/plerup/makeEspArduino
 
+If using Arduino IDE you can skip the above.
+
 ## Build
 
 Prepare and edit `config.h`:
@@ -14,7 +16,7 @@ Prepare and edit `config.h`:
 cp src/config.h.example config.h
 ```
 
-Build:
+Build using Arduino IDE or make:
 
 ```
 make clean
